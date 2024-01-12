@@ -91,7 +91,7 @@ def handle_archive(path: Path, root_folder, dist):
     archive_folder = target_folder / new_name
     archive_folder.mkdir(exist_ok=True)
     path.rename(archive_folder / path.name)
-
+    
     try:
         shutil.unpack_archive(str(path.resolve()), archive_folder)
     except shutil.ReadError:
@@ -122,9 +122,7 @@ def get_folder_objects(root_path):
                 pass
 
 def main():
-    path = sys.argv[1]
-    print(f'Start in "{path}"')
-    folder_path = Path(path)
+    folder_path = Path(sys.argv[1])
 
     scan(folder_path)
 
@@ -148,12 +146,5 @@ def main():
 
     get_folder_objects(folder_path)
 
-def start_script(path):
-    print(f'Start in "{path}"')
-
-    arg = Path(path)
-    main(arg.resolve())
-
 if __name__ == '__main__':
-    path = sys.argv[1]
-    start_script(path)
+    main()
