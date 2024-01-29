@@ -3,14 +3,10 @@ from pathlib import Path
 import sys
 import shutil
 
-
-
 UKRAINIAN_SYMBOLS = 'абвгдеєжзиіїйклмнопрстуфхцчшщьюя'
-TRANSLATION = ("a", "b", "v", "g", "d", "e", "je", "zh", "z", "y", "i", "ji", "j", 
+TRANSLATION = ("a", "b", "v", "g", "d", "e", "je", "zh", "z", "y", "i", "ji", "j",
                "k", "l", "m", "n", "o", "p", "r", "s", "t", "u",
                "f", "h", "ts", "ch", "sh", "sch", "", "ju", "ja")
-
-
 TRANS = {}
 images = list()
 documents = list()
@@ -26,13 +22,11 @@ for key, value in zip(UKRAINIAN_SYMBOLS, TRANSLATION):
     TRANS[ord(key)] = value
     TRANS[ord(key.upper())] = value.upper()
 
-
 def normalize(name):
     name, *extension = name.split('.')
     new_name = name.translate(TRANS)
     new_name = re.sub(r'\W', "_", new_name)
     return f"{new_name}.{'.'.join(extension)}"
-
 
 registered_extensions = {
     "JPEG": images,
@@ -58,10 +52,8 @@ registered_extensions = {
     "MOV": video
 }
 
-
 def get_extensions(file_name):
     return Path(file_name).suffix[1:].upper()
-
 
 def scan(folder):
     for item in folder.iterdir():
@@ -70,7 +62,6 @@ def scan(folder):
                 folders.append(item)
                 scan(item)
             continue
-
         extension = get_extensions(file_name=item.name)
         new_name = folder/item.name
         if not extension:
@@ -84,32 +75,26 @@ def scan(folder):
                 unknown.add(extension)
                 others.append(new_name)
 
-
 def handle_file(path, root_folder, dist):
     target_folder = root_folder / dist
     target_folder.mkdir(exist_ok=True)
     path.replace(target_folder/normalize(path.name))
 
-
-def handle_archive(path, root_folder, dist):
-    target_folder = Path(root_folder) / dist
+def handle_archive(path: Path, root_folder, dist):
+    target_folder = root_folder / dist
     target_folder.mkdir(exist_ok=True)
     new_name = normalize(path.name.replace(".zip", '').replace('.tar', '').replace('.gz', ''))
     archive_folder = target_folder / new_name
     archive_folder.mkdir(exist_ok=True)
-
+    # path.rename(archive_folder / path.name)
     try:
-        shutil.unpack_archive(str(path.resolve()), str(archive_folder.resolve()))
+        shutil.unpack_archive(str(path.resolve()), archive_folder)
     except shutil.ReadError:
-        archive_folder.rmdir()
-        path.unlink()
         return
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         archive_folder.rmdir()
-        path.unlink()
         return
     path.unlink()
-
 
 def remove_empty_folders(path):
     for item in path.iterdir():
@@ -119,7 +104,6 @@ def remove_empty_folders(path):
                 item.rmdir()
             except OSError:
                 pass
-
 
 def get_folder_objects(root_path):
     for folder in root_path.iterdir():
@@ -132,32 +116,23 @@ def get_folder_objects(root_path):
 
 def main():
     folder_path = Path(sys.argv[1])
-
     scan(folder_path)
-
     for file in images:
         handle_file(file, folder_path, "IMAGES")
-
     for file in audio:
         handle_file(file, folder_path, "AUDIO")
-
     for file in video:
         handle_file(file, folder_path, "VIDEO")
-
     for file in documents:
         handle_file(file, folder_path, "DOCUMENTS")
-
     for file in others:
         handle_file(file, folder_path, "OTHERS")
-
     for file in archives:
         handle_archive(file, folder_path, "ARCHIVE")
-
     get_folder_objects(folder_path)
-
 if __name__ == '__main__':
     main()
-    
+
 print(f'images: {[normalize(file.name) for file in images]}')
 print(f'video: {[normalize(file.name) for file in video]}')
 print(f'documents: {[normalize(file.name) for file in documents]}')
