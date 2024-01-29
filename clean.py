@@ -38,6 +38,7 @@ registered_extensions = {
     "JPEG": images,
     "PNG": images,
     "JPG": images,
+    "SVG": images,
     "DOC": documents,
     "PDF": documents,
     "TXT": documents,
@@ -45,6 +46,11 @@ registered_extensions = {
     "PPTX": documents,
     "XLSX" : documents,
     "ZIP": archives,
+    "GZ": archives,
+    "TAR": archives,
+    "OGG": audio,
+    "WAV": audio,
+    "AMR": audio,
     "MP3": audio,
     "MP4": video,
     "AVI": video,
@@ -60,7 +66,7 @@ def get_extensions(file_name):
 def scan(folder):
     for item in folder.iterdir():
         if item.is_dir():
-            if item.name not in ("JPEG", "JPG", "PNG", "TXT", "DOCX", "DOC", "PDF", "PPTX", "XLSX" "OTHER", "ZIP", "MP3", "MP4","AVI","MKV","MOV"):
+            if item.name not in ("JPEG", "JPG", "SVG", "PNG", "TXT", "DOCX", "DOC", "PDF", "PPTX", "XLSX" "OTHER", "ZIP", "TAR", "GZ", "MP3", "AMR", "WAV", "OGG", "MP4","AVI","MKV","MOV"):
                 folders.append(item)
                 scan(item)
             continue
@@ -85,22 +91,22 @@ def handle_file(path, root_folder, dist):
     path.replace(target_folder/normalize(path.name))
 
 
-def handle_archive(path: Path, root_folder, dist):
-    target_folder = root_folder / dist
+def handle_archive(path, root_folder, dist):
+    target_folder = Path(root_folder) / dist
     target_folder.mkdir(exist_ok=True)
-
-    new_name = normalize(path.name.replace(".zip", ''))
-
+    new_name = normalize(path.name.replace(".zip", '').replace('.tar', '').replace('.gz', ''))
     archive_folder = target_folder / new_name
     archive_folder.mkdir(exist_ok=True)
-    path.rename(archive_folder / path.name)
-    
+
     try:
-        shutil.unpack_archive(str(path.resolve()), archive_folder)
+        shutil.unpack_archive(str(path.resolve()), str(archive_folder.resolve()))
     except shutil.ReadError:
-        return
-    except FileNotFoundError as e:
         archive_folder.rmdir()
+        path.unlink()
+        return
+    except FileNotFoundError:
+        archive_folder.rmdir()
+        path.unlink()
         return
     path.unlink()
 
@@ -151,12 +157,12 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    print(f"Images: {images}\n")
-    print(f"Video: {video}\n")
-    print(f"Audio: {audio}\n")
-    print(f"Documents: {documents}\n")
-    print(f"Archive: {archives}\n")
-    print(f"Unknown: {others}\n")
-    print(f"All extensions: {extensions}\n")
-    print(f"Unknown extensions: {unknown}\n")
+    
+print(f'images: {[normalize(file.name) for file in images]}')
+print(f'video: {[normalize(file.name) for file in video]}')
+print(f'documents: {[normalize(file.name) for file in documents]}')
+print(f'audio: {[normalize(file.name) for file in audio]}')
+print(f'archives: {[normalize(file.name) for file in archives]}')
+print(f"other: {[normalize(file.name) for file in others]}")
+print(f"unknowns extensions: {[normalize(ext) for ext in unknown]}")
+print(f"unique extensions: {[normalize(ext) for ext in extensions]}")
